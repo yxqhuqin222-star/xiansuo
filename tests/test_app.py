@@ -22,3 +22,20 @@ class DashboardTests(unittest.TestCase):
             self.assertEqual(dashboard({'page': ['2']}, path)['rows'], [])
             with self.assertRaises(ValueError): dashboard({'start': ['2026-02-01'], 'end': ['2026-01-01']}, path)
             self.assertFalse(dashboard({}, Path(directory) / 'missing.sqlite3')['sources'])
+
+    def test_sort_before_pagination_and_missing_last(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'test.sqlite3'
+            rows = [['2026-01-01', '小学', '秋1', '1', str(i), i, 20, 3, 5, 8] for i in range(55)]
+            with closing(connect(path)) as db:
+                replace_source(db, '经营', book(J, rows), 'test.xlsx')
+                replace_source(db, '线索', book(L, [['20260102', '小学', '秋1', '1', 'only', 1, 5]]), 'test.xlsx')
+            asc = dashboard({'sort': ['经营例子量'], 'direction': ['asc']}, path)
+            desc = dashboard({'sort': ['经营例子量'], 'direction': ['desc']}, path)
+            self.assertEqual(asc['rows'][0]['经营例子量'], 0)
+            self.assertEqual(desc['rows'][0]['经营例子量'], 54)
+            self.assertEqual(dashboard({'sort': ['经营例子量'], 'direction': ['asc'], 'page': ['2']}, path)['rows'][-1]['状态'], '线索：未匹配')
+            self.assertEqual(dashboard({'sort': ['经营例子量'], 'direction': ['desc'], 'page': ['2']}, path)['rows'][-1]['状态'], '线索：未匹配')
+            self.assertEqual(asc['summary'], desc['summary'])
+            with self.assertRaises(ValueError): dashboard({'sort': ['invalid']}, path)
+            with self.assertRaises(ValueError): dashboard({'sort': ['日期'], 'direction': ['invalid']}, path)

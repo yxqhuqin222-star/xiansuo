@@ -13,6 +13,8 @@ from data_layer import detail, filter_rows, sources, summarize
 ROOT = Path(__file__).resolve().parent
 DB = ROOT / 'data' / 'dashboard.sqlite3'
 FILTERS = ('学部', '流量期次', '外呼池', '线索批次')
+SORT_FIELDS = ('日期', '学部', '流量期次', '外呼池', '线索批次', '状态',
+               '经营例子量', '接通转化率', '有课例产', '单例子结算成本', '北A')
 
 
 def dashboard(params, db_path=DB):
@@ -30,6 +32,15 @@ def dashboard(params, db_path=DB):
     selected = filter_rows(all_rows, start or None, end or None,
                            **{key: params.get(key, []) for key in FILTERS})
     options = {key: sorted({r[key] for r in all_rows if r.get(key) is not None}) for key in FILTERS}
+    sort_field = params.get('sort', [''])[0]
+    direction = params.get('direction', ['asc'])[0]
+    if sort_field and (sort_field not in SORT_FIELDS or direction not in ('asc', 'desc')):
+        raise ValueError('排序字段或方向无效')
+    if sort_field:
+        present = [row for row in selected if row.get(sort_field) is not None]
+        missing = [row for row in selected if row.get(sort_field) is None]
+        present.sort(key=lambda row: row[sort_field], reverse=direction == 'desc')
+        selected = present + missing
     page = int(params.get('page', ['1'])[0])
     if page < 1:
         raise ValueError('页码必须大于零')
@@ -49,11 +60,11 @@ class Handler(BaseHTTPRequestHandler):
                 body = json.dumps({'error': str(exc)}, ensure_ascii=False).encode()
                 self.send_response(400 if isinstance(exc, ValueError) else 500)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
-        elif url.path in ('/', '/style.css', '/app.js'):
+        elif url.path in ('/', '/style.css', '/app.js', '/ui.css', '/ui.js'):
             name = 'index.html' if url.path == '/' else url.path[1:]
-            body = (ROOT / 'web' / name).read_bytes()
+            body = (ROOT / 'web' / ('dist' if name in ('ui.css', 'ui.js') else '') / name).read_bytes()
             self.send_response(200)
-            self.send_header('Content-Type', {'index.html': 'text/html', 'style.css': 'text/css', 'app.js': 'text/javascript'}[name] + '; charset=utf-8')
+            self.send_header('Content-Type', {'index.html': 'text/html', 'style.css': 'text/css', 'app.js': 'text/javascript', 'ui.js': 'text/javascript', 'ui.css': 'text/css'}[name] + '; charset=utf-8')
         else:
             self.send_error(404)
             return
