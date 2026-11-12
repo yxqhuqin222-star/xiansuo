@@ -112,3 +112,31 @@ th[aria-sort="descending"] .sort-button span::after{border-top-color:#222}
 /* Daily trends */
 section.trends{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px 24px;margin-bottom:14px}
 .trend-chart+.trend-chart{border-top:1px solid var(--line);margin-top:22px;padding-top:22px}.trend-chart h3{font-size:15px;margin:0 0 8px;font-weight:650}.trend-scroll{overflow-x:auto;max-width:100%}.trend-scroll svg{display:block;max-width:none}.trend-grid{stroke:#e7e7e7;stroke-width:1}.trend-axis,.trend-value{fill:#555;font-size:12px;font-family:inherit;font-variant-numeric:tabular-nums}.trend-value{fill:#333}.trend-legend{display:flex;justify-content:center;flex-wrap:wrap;gap:10px 20px;font-size:12px;margin-top:8px}.trend-legend>span{display:inline-flex;align-items:center;gap:7px}.trend-legend-line{width:20px;height:3px;border-radius:2px}.trend-empty{color:var(--muted);font-size:13px;text-align:center;padding:36px 0;margin:0}@media(max-width:600px){section.trends{padding:18px 16px}}
+
+/* Warm, restrained workspace palette. */
+:root{--canvas:#f5f2ec;--surface:#fffefa;--ink:#16181b;--muted:#555d59;--line:#dedbd3;--control-line:#b7bcb5;--action:#1e694d;--action-hover:#13533c;--action-soft:#e8f1ea;--focus:#1e694d;--accent:var(--action)}
+:root,body,.top{background:var(--canvas);color:var(--ink)}
+.top{border-color:var(--line)}.top-note{color:var(--muted)}
+section.filters,section.overview,section.trends,section.details{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 3px #4c40260b}
+h1,h2,.metric-value{color:var(--ink)}
+.section-head h2{display:flex;align-items:center;gap:10px}
+.section-head h2::before{content:'';width:4px;height:20px;border-radius:2px;background:var(--action);flex:none}
+.primary{background:var(--action);color:#fff}.primary:hover{background:var(--action-hover)}
+.secondary-button,.pagination button{background:#fffefa;border-color:var(--control-line);color:var(--ink)}
+.secondary-button:not(:disabled):hover,.pagination button:not(:disabled):hover{background:var(--action-soft);border-color:var(--action);color:var(--action-hover)}
+.text-button,.multi-select__actions button{color:var(--action)}
+.text-button:hover,.multi-select__actions button:not(:disabled):hover{color:var(--action-hover)}
+.filter-control .label,.filter-control label,.column-picker legend{color:#444e48}
+.filter-control .date-input-group,.multi-select summary,.multi-select__toolbar input{background:#fffefa;border-color:var(--control-line);color:var(--ink)}
+.filter-control .date-input-group:hover,.multi-select summary:hover{border-color:var(--action)}
+.multi-select[open] summary,.filter-control .date-input-group:focus-within{border-color:var(--focus);box-shadow:0 0 0 3px #1e694d22}
+.multi-select__panel,.date-popover,.filter-popover{background:#fffefa;border-color:var(--line)}
+.multi-select__option:hover,.table-wrap tbody tr:hover{background:var(--action-soft)}
+.multi-select__option input,.column-option input{accent-color:var(--action)}
+.metrics .metric{border-color:var(--line)}.metric-label,.muted,.pagination,.column-hint,.upload-status{color:var(--muted)}
+.table-wrap{border-color:var(--line)}.table-wrap th{background:#e6eee7;color:#394c40}.table-wrap td{color:#252b27;border-color:#e8e6df}
+.sort-button:hover,.sort-button:focus-visible,.sort-button:hover span,th[aria-sort] .sort-button span{color:var(--action)}
+th[aria-sort="ascending"] .sort-button span::before{border-bottom-color:var(--action)}
+th[aria-sort="descending"] .sort-button span::after{border-top-color:var(--action)}
+.trend-grid{stroke:#e3e5dd}.trend-axis,.trend-value{fill:#4e5a52}
+:focus-visible,button:focus-visible{outline-color:var(--focus)}
