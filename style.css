@@ -140,5 +140,3 @@ th[aria-sort="ascending"] .sort-button span::before{border-bottom-color:var(--ac
 th[aria-sort="descending"] .sort-button span::after{border-top-color:var(--action)}
 .trend-grid{stroke:#e3e5dd}.trend-axis,.trend-value{fill:#4e5a52}
 :focus-visible,button:focus-visible{outline-color:var(--focus)}
-
-.pages-files{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}.pages-files label{color:var(--muted)}.pages-files input{height:auto;max-width:100%;font-size:13px;padding:8px;background:var(--surface)}@media(max-width:600px){.pages-files{grid-template-columns:1fr}}
