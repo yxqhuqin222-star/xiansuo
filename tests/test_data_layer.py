@@ -51,7 +51,10 @@ class DataLayerTests(unittest.TestCase):
         self.assertEqual(sources(self.db),before)
         self.put('经营',J,[['2026-01-02','初中','秋2',34,'b',7,14,3,5,8]])
         rows=detail(self.db)
-        self.assertEqual(len(rows),2); self.assertEqual(summarize(rows)['例子数量'],7)
+        self.assertEqual(len(rows),2)
+        self.assertEqual(rows[0]['状态'], '经营表未找到')
+        self.assertEqual(rows[1]['状态'], '线索表未找到')
+        self.assertEqual(summarize(rows)['例子数量'],7)
         self.assertEqual(summarize(rows)['线索例子量'],2)
 
     def test_legacy_header_and_partial_metric_are_safe(self):

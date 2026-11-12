@@ -1,6 +1,6 @@
 # 线索数据处理
 
-当前实现本地数据导入、关联、指标计算和只读网页看板。需要 Python 3 和 `requirements.txt` 中的依赖。业务 Excel 和本地数据库不包含在仓库中，请自行准备文件。
+当前实现本地数据导入、关联、指标计算和网页看板。需要 Python 3 和 `requirements.txt` 中的依赖。
 
 ```bash
 python3 -m venv .venv
@@ -17,4 +17,4 @@ python3 -m venv .venv
 
 ## 本地看板
 
-安装 Python 依赖并导入数据后，首次运行 `npm ci && npm run build` 构建界面；界面源码有改动时重新运行 `npm run build`。然后运行 `.venv/bin/python app.py`，在浏览器打开 http://127.0.0.1:8001。看板支持日期、学部、流量期次、外呼池和线索批次筛选，展示汇总指标与分页关联明细。数据导入仍使用上方命令行；服务只监听本机，不提供外网访问。退出服务按 Ctrl+C。
+安装 Python 依赖后，首次运行 `npm ci && npm run build` 构建界面；界面源码有改动时重新运行 `npm run build`。在浏览器打开 http://127.0.0.1:8001。当前 Mac 已配置用户级后台服务，登录后自动启动，进程退出时自动重启；如果没有配置该服务，可在终端运行 `.venv/bin/python app.py`。将批次类型映射表 `xiansuoleixin.xlsx` 放在项目目录（`Sheet1` 包含“批次”和“批次类型”列）。保存项目目录中的 `jingyinglirun_demo.xlsx` 和 `xiansuoloudou.xlsx` 后，点击“更新数据”即可重新读取两份文件并刷新看板；每份文件需包含该来源所需的全部历史数据。服务只监听本机，不提供外网访问。手动在终端运行时可用 Ctrl+C 退出；后台服务运行时不要再启动第二个实例。若 8001 被其他程序占用，需先处理端口冲突。

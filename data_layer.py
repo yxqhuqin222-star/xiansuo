@@ -73,24 +73,23 @@ def parse_workbook(content: bytes, kind: str):
         if not header:
             raise ImportErrorDetail('工作表为空')
         names = [clean(x) for x in header]
-        if len([x for x in names if x]) != len(set(x for x in names if x)):
-            raise ImportErrorDetail('表头存在重复字段')
         if kind == '线索':
             names = [MAP.get(x, x) for x in names]
             if '例子量' not in names and '例子数' in names:
                 names[names.index('例子数')] = '例子量'
             elif '例子量' in names and '例子数' in names:
                 raise ImportErrorDetail('同时存在例子量和例子数，请保留一个字段')
-        if len([x for x in names if x]) != len(set(x for x in names if x)):
+        required = KEYS + FIELDS[kind]
+        if any(names.count(name) > 1 for name in required):
             raise ImportErrorDetail('映射后表头存在重复字段')
-        missing = set(KEYS + FIELDS[kind]) - set(names)
+        missing = set(required) - set(names)
         if missing:
             raise ImportErrorDetail('缺少必要字段：' + '、'.join(sorted(missing)))
         out = []
         for rownum, values in enumerate(it, start=2):
-            if not any(v is not None and str(v).strip() for v in values):
+            row = {name: values[i] if i < len(values) else None for i, name in enumerate(names) if name in required}
+            if not any(v is not None and str(v).strip() for v in row.values()):
                 continue
-            row = dict(zip(names, values))
             try:
                 parsed = {key: (parse_date(row.get(key)) if key == '日期' else clean(row.get(key))) for key in KEYS}
                 parsed.update({field: number(row.get(field), field) for field in FIELDS[kind]})
@@ -100,6 +99,37 @@ def parse_workbook(content: bytes, kind: str):
         if not out:
             raise ImportErrorDetail('工作表没有数据行')
         return out
+    finally:
+        book.close()
+
+
+def read_batch_types(path):
+    try:
+        book = load_workbook(path, read_only=True, data_only=True)
+    except Exception as exc:
+        raise ImportErrorDetail(f'无法读取批次类型表 {path.name}') from exc
+    try:
+        if 'Sheet1' not in book.sheetnames:
+            raise ImportErrorDetail('批次类型表缺少 Sheet1 工作表')
+        sheet = book['Sheet1']; sheet.reset_dimensions()
+        rows = sheet.iter_rows(values_only=True)
+        header = [clean(v) for v in next(rows, ())]
+        for field in ('批次', '批次类型'):
+            if header.count(field) != 1:
+                raise ImportErrorDetail(f'批次类型表缺少或重复字段：{field}')
+        batch_index, type_index = header.index('批次'), header.index('批次类型')
+        mapping = {}
+        for rownum, row in enumerate(rows, start=2):
+            batch = clean(row[batch_index] if batch_index < len(row) else None)
+            kind = clean(row[type_index] if type_index < len(row) else None)
+            if batch is None and kind is None:
+                continue
+            if batch is None or kind is None:
+                raise ImportErrorDetail(f'批次类型表第 {rownum} 行的批次或批次类型为空')
+            if batch in mapping and mapping[batch] != kind:
+                raise ImportErrorDetail(f'批次类型表第 {rownum} 行的批次对应多个类型：{batch}')
+            mapping[batch] = kind
+        return mapping
     finally:
         book.close()
 
@@ -114,13 +144,23 @@ def connect(path):
 
 
 def replace_source(db, kind, content, filename):
-    rows = parse_workbook(content, kind)  # Validate everything before changing the database.
-    digest = hashlib.sha256(content).hexdigest()
+    return replace_sources(db, [(kind, content, filename)])[kind]
+
+
+def replace_sources(db, inputs):
+    prepared = []
+    for kind, content, filename in inputs:
+        try:
+            rows = parse_workbook(content, kind)
+        except ImportErrorDetail as exc:
+            raise ImportErrorDetail(f'{filename}：{exc}') from exc
+        prepared.append((kind, filename, hashlib.sha256(content).hexdigest(), rows))
     with db:
-        db.execute('DELETE FROM sources WHERE kind=?', (kind,))
-        db.execute('INSERT INTO sources(kind, filename, sha256) VALUES (?, ?, ?)', (kind, Path(filename).name, digest))
-        db.executemany('INSERT INTO records(kind,payload) VALUES (?,?)', ((kind, json.dumps(row, ensure_ascii=False)) for row in rows))
-    return len(rows)
+        for kind, filename, digest, rows in prepared:
+            db.execute('DELETE FROM sources WHERE kind=?', (kind,))
+            db.execute('INSERT INTO sources(kind, filename, sha256) VALUES (?, ?, ?)', (kind, Path(filename).name, digest))
+            db.executemany('INSERT INTO records(kind,payload) VALUES (?,?)', ((kind, json.dumps(row, ensure_ascii=False)) for row in rows))
+    return {kind: len(rows) for kind, _, _, rows in prepared}
 
 
 def sources(db):
@@ -185,7 +225,8 @@ def detail(db):
         else:
             for data, kind in ((a, '经营'), (b, '线索')):
                 if data is not None:
-                    rows.append(calculate({**dict(zip(KEYS, key)), **data, '状态': f'{kind}：' + ('键缺失' if any(v is None for v in key) else '未匹配')}))
+                    status = f'{kind}：键缺失' if any(v is None for v in key) else ('线索表未找到' if kind == '经营' else '经营表未找到')
+                    rows.append(calculate({**dict(zip(KEYS, key)), **data, '状态': status}))
     return sorted(rows, key=lambda r: tuple(r[k] or '' for k in KEYS) + (r['状态'],))
 
 
@@ -206,3 +247,11 @@ def summarize(rows):
     # Totals may cover different populations; comparison is meaningful only per matched key.
     result['例子差异'] = None
     return result
+
+
+def aggregate_rows(rows, dimensions):
+    """Group already-associated detail rows without changing their source membership."""
+    groups = defaultdict(list)
+    for row in rows:
+        groups[tuple(row.get(key) for key in dimensions)].append(row)
+    return [{**dict(zip(dimensions, key)), **summarize(group)} for key, group in groups.items()]
