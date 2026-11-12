@@ -38,3 +38,15 @@ class PagesAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '多个类型'):
             backend.refresh(self.operating,self.leads,invalid)
         self.assertEqual(json.loads(backend.dashboard(query))['rows'][0]['批次类型'],'甲类')
+
+    def test_snapshot_load_keeps_query_and_export_results(self):
+        backend.refresh(self.operating, self.leads, self.mapping)
+        database=(backend.current / 'data.sqlite3').read_bytes()
+        query='aggregate=1&dimension=学部&column=学部&column=接通转化率'
+        expected=json.loads(backend.dashboard(query))
+        backend.load_snapshot(database, self.mapping)
+        actual=json.loads(backend.dashboard(query))
+        self.assertEqual(actual['summary'], expected['summary'])
+        self.assertEqual(actual['rows'], expected['rows'])
+        sheet=load_workbook(BytesIO(backend.export(query))).active
+        self.assertEqual(list(sheet.values), [('学部','接通转化率'),('小学',0.2)])
