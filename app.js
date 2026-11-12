@@ -92,7 +92,7 @@ document.querySelector('#export').addEventListener('click',async event=>{
 });
 const refreshButton=document.querySelector('#refresh-data'),uploadStatus=document.querySelector('#upload-status');
 refreshButton.addEventListener('click',async()=>{
-  refreshButton.disabled=true;uploadStatus.classList.remove('error');uploadStatus.textContent='正在读取三份表格…';
+  refreshButton.disabled=true;uploadStatus.classList.remove('error');uploadStatus.textContent='正在加载公开数据…';
   try{
     const response=await dashboardFetch('/api/refresh',{method:'POST',headers:{'Content-Type':'application/json'}});
     const data=await response.json();if(!response.ok)throw new Error(data.error||'更新失败');

@@ -24,7 +24,12 @@ self.onmessage=async ({data})=>{
     const backend=py.pyimport('backend');
     try{
       let value;
-      if(action==='refresh'){
+      if(action==='snapshot'){
+        const responses=await Promise.all(['./snapshot/data.sqlite3','./snapshot/mapping.xlsx'].map(url=>fetch(url,{cache:'no-store'})));
+        if(responses.some(response=>!response.ok))throw new Error('公开数据加载失败');
+        const args=await Promise.all(responses.map(async response=>py.toPy(new Uint8Array(await response.arrayBuffer()))));
+        try{const result=backend.load_snapshot(...args);value=result.toJs({dict_converter:Object.fromEntries});result.destroy()}finally{args.forEach(arg=>arg.destroy())}
+      }else if(action==='refresh'){
         const args=files.map(file=>py.toPy(new Uint8Array(file)));
         try{const result=backend.refresh(...args);value=result.toJs({dict_converter:Object.fromEntries});result.destroy()}finally{args.forEach(arg=>arg.destroy())}
       }else if(action==='dashboard')value=backend.dashboard(query);
